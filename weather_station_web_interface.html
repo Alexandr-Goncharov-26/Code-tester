@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Погодная Автономная Станция</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --card-bg: white;
+            --border-radius: 10px;
+            --box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: var(--secondary-color);
+            margin-right: 10px;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .current-values {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .value-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .value-title {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+        
+        .value-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .unit {
+            font-size: 1rem;
+            color: #95a5a6;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-wrapper {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            height: 400px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .prediction-result {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .prediction-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .prediction-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .archive-info {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard, .current-values {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .value-number {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span class="status-indicator"></span>Погодная Автономная Станция</h1>
+            <p>Система мониторинга и прогнозирования погоды с автономным веб-интерфейсом</p>
+        </header>
+        
+        <div class="controls">
+            <button id="startBtn">Запустить симуляцию</button>
+            <button id="stopBtn">Остановить симуляцию</button>
+            <button id="predictBtn">Прогнозировать погоду</button>
+        </div>
+        
+        <div class="current-values">
+            <div class="value-card">
+                <div class="value-title">Температура</div>
+                <div class="value-number" id="temperatureValue">20.0</div>
+                <div class="unit">°C</div>
+            </div>
+            <div class="value-card">
+                <div class="value-title">Влажность</div>
+                <div class="value-number" id="humidityValue">50.0</div>
+                <div class="unit">%</div>
+            </div>
+            <div class="value-card">
+                <div class="value-title">Давление</div>
+                <div class="value-number" id="pressureValue">1013.25</div>
+                <div class="unit">гПа</div>
+            </div>
+            <div class="value-card">
+                <div class="value-title">Вероятность дождя</div>
+                <div class="value-number" id="rainProbabilityValue">20</div>
+                <div class="unit">%</div>
+            </div>
+        </div>
+        
+        <div class="prediction-result">
+            <div class="prediction-title">Прогноз погоды</div>
+            <div class="prediction-value" id="predictionValue">Ясно</div>
+        </div>
+        
+        <div class="charts-container">
+            <div class="chart-wrapper">
+                <canvas id="temperatureChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="humidityChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="pressureChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="archive-info">
+            <h2>Архивные данные (недельные)</h2>
+            <table id="archiveTable">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Температура (°C)</th>
+                        <th>Влажность (%)</th>
+                        <th>Давление (гПа)</th>
+                        <th>Состояние</th>
+                    </tr>
+                </thead>
+                <tbody id="archiveBody">
+                    <!-- Archive data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Weather Station Data Simulation
+        class WeatherStation {
+            constructor() {
+                this.data = {
+                    temperature: [],
+                    humidity: [],
+                    pressure: []
+                };
+                
+                this.currentValues = {
+                    temperature: 20.0,
+                    humidity: 50.0,
+                    pressure: 1013.25
+                };
+                
+                this.simulationInterval = null;
+                this.isRunning = false;
+                
+                // Initialize charts
+                this.initCharts();
+                
+                // Load initial data
+                this.generateInitialData();
+            }
+            
+            initCharts() {
+                const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+                this.tempChart = new Chart(tempCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Температура (°C)',
+                            data: [],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+                
+                const humCtx = document.getElementById('humidityChart').getContext('2d');
+                this.humChart = new Chart(humCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Влажность (%)',
+                            data: [],
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+                
+                const presCtx = document.getElementById('pressureChart').getContext('2d');
+                this.presChart = new Chart(presCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Давление (гПа)',
+                            data: [],
+                            borderColor: '#9b59b6',
+                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+            }
+            
+            generateInitialData() {
+                const now = new Date();
+                for (let i = 30; i >= 0; i--) {
+                    const time = new Date(now.getTime() - i * 60000); // Every minute
+                    const temp = 20 + Math.sin(i / 5) * 5 + (Math.random() - 0.5) * 2;
+                    const hum = 50 + Math.cos(i / 4) * 10 + (Math.random() - 0.5) * 5;
+                    const pres = 1013 + Math.sin(i / 6) * 5 + (Math.random() - 0.5) * 2;
+                    
+                    this.data.temperature.push({time: time.toISOString(), value: parseFloat(temp.toFixed(2))});
+                    this.data.humidity.push({time: time.toISOString(), value: parseFloat(hum.toFixed(2))});
+                    this.data.pressure.push({time: time.toISOString(), value: parseFloat(pres.toFixed(2))});
+                }
+                
+                this.updateCharts();
+                this.updateCurrentValues();
+            }
+            
+            updateSimulation() {
+                const now = new Date();
+                const tempChange = (Math.random() - 0.5) * 0.5;
+                const humChange = (Math.random() - 0.5) * 1;
+                const presChange = (Math.random() - 0.5) * 0.5;
+                
+                this.currentValues.temperature += tempChange;
+                this.currentValues.humidity += humChange;
+                this.currentValues.pressure += presChange;
+                
+                // Keep humidity in valid range
+                this.currentValues.humidity = Math.max(0, Math.min(100, this.currentValues.humidity));
+                
+                // Add new data points
+                this.data.temperature.push({
+                    time: now.toISOString(),
+                    value: parseFloat(this.currentValues.temperature.toFixed(2))
+                });
+                
+                this.data.humidity.push({
+                    time: now.toISOString(),
+                    value: parseFloat(this.currentValues.humidity.toFixed(2))
+                });
+                
+                this.data.pressure.push({
+                    time: now.toISOString(),
+                    value: parseFloat(this.currentValues.pressure.toFixed(2))
+                });
+                
+                // Keep only last 30 data points
+                if (this.data.temperature.length > 30) {
+                    this.data.temperature.shift();
+                    this.data.humidity.shift();
+                    this.data.pressure.shift();
+                }
+                
+                this.updateCharts();
+                this.updateCurrentValues();
+            }
+            
+            updateCharts() {
+                // Update temperature chart
+                const tempLabels = this.data.temperature.map(d => new Date(d.time).toLocaleTimeString());
+                const tempData = this.data.temperature.map(d => d.value);
+                
+                this.tempChart.data.labels = tempLabels;
+                this.tempChart.data.datasets[0].data = tempData;
+                this.tempChart.update();
+                
+                // Update humidity chart
+                const humLabels = this.data.humidity.map(d => new Date(d.time).toLocaleTimeString());
+                const humData = this.data.humidity.map(d => d.value);
+                
+                this.humChart.data.labels = humLabels;
+                this.humChart.data.datasets[0].data = humData;
+                this.humChart.update();
+                
+                // Update pressure chart
+                const presLabels = this.data.pressure.map(d => new Date(d.time).toLocaleTimeString());
+                const presData = this.data.pressure.map(d => d.value);
+                
+                this.presChart.data.labels = presLabels;
+                this.presChart.data.datasets[0].data = presData;
+                this.presChart.update();
+            }
+            
+            updateCurrentValues() {
+                document.getElementById('temperatureValue').textContent = this.currentValues.temperature.toFixed(1);
+                document.getElementById('humidityValue').textContent = this.currentValues.humidity.toFixed(1);
+                
+                // Calculate rain probability based on pressure drop
+                const recentPressure = this.data.pressure.slice(-5).map(d => d.value);
+                let avgRecentPressure = recentPressure.reduce((a, b) => a + b, 0) / recentPressure.length;
+                let currentPressure = this.currentValues.pressure;
+                
+                let rainProbability = 0;
+                if (avgRecentPressure - currentPressure > 5) {
+                    rainProbability = 80;
+                } else if (avgRecentPressure - currentPressure > 2) {
+                    rainProbability = 50;
+                } else if (avgRecentPressure - currentPressure > 0) {
+                    rainProbability = 30;
+                } else {
+                    rainProbability = 10;
+                }
+                
+                document.getElementById('pressureValue').textContent = this.currentValues.pressure.toFixed(2);
+                document.getElementById('rainProbabilityValue').textContent = Math.round(rainProbability);
+            }
+            
+            startSimulation() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.simulationInterval = setInterval(() => {
+                        this.updateSimulation();
+                    }, 2000); // Update every 2 seconds
+                }
+            }
+            
+            stopSimulation() {
+                if (this.isRunning) {
+                    this.isRunning = false;
+                    clearInterval(this.simulationInterval);
+                }
+            }
+            
+            predictWeather() {
+                // Simple prediction algorithm based on trends
+                const tempTrend = this.calculateTrend(this.data.temperature);
+                const humTrend = this.calculateTrend(this.data.humidity);
+                const presTrend = this.calculateTrend(this.data.pressure);
+                
+                let prediction = '';
+                
+                // Prediction logic based on trends
+                if (presTrend < -0.1 && humTrend > 0.05) {
+                    prediction = 'Дождь';
+                } else if (presTrend > 0.1 && humTrend < -0.05) {
+                    prediction = 'Ясно';
+                } else if (tempTrend > 0.1) {
+                    prediction = 'Потепление';
+                } else if (tempTrend < -0.1) {
+                    prediction = 'Похолодание';
+                } else {
+                    prediction = 'Стабильно';
+                }
+                
+                document.getElementById('predictionValue').textContent = prediction;
+                
+                // Add to archive
+                this.addToArchive(prediction);
+            }
+            
+            calculateTrend(dataArray) {
+                if (dataArray.length < 2) return 0;
+                
+                const values = dataArray.map(item => item.value);
+                const n = values.length;
+                let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+                
+                for (let i = 0; i < n; i++) {
+                    sumX += i;
+                    sumY += values[i];
+                    sumXY += i * values[i];
+                    sumXX += i * i;
+                }
+                
+                const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+                return slope;
+            }
+            
+            addToArchive(weatherCondition) {
+                const now = new Date();
+                const newRow = document.createElement('tr');
+                
+                newRow.innerHTML = `
+                    <td>${now.toLocaleDateString()}</td>
+                    <td>${this.currentValues.temperature.toFixed(2)}</td>
+                    <td>${this.currentValues.humidity.toFixed(2)}</td>
+                    <td>${this.currentValues.pressure.toFixed(2)}</td>
+                    <td>${weatherCondition}</td>
+                `;
+                
+                document.getElementById('archiveBody').prepend(newRow);
+                
+                // Keep only last 10 records in the table
+                const rows = document.querySelectorAll('#archiveBody tr');
+                if (rows.length > 10) {
+                    rows[rows.length - 1].remove();
+                }
+            }
+        }
+
+        // Initialize weather station
+        const weatherStation = new WeatherStation();
+        
+        // Event listeners
+        document.getElementById('startBtn').addEventListener('click', () => {
+            weatherStation.startSimulation();
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            weatherStation.stopSimulation();
+        });
+        
+        document.getElementById('predictBtn').addEventListener('click', () => {
+            weatherStation.predictWeather();
+        });
+        
+        // Start simulation automatically
+        window.onload = function() {
+            weatherStation.startSimulation();
+        };
+    </script>
+</body>
+</html>
