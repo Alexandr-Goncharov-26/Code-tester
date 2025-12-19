@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Визуализатор множества Мандельброта</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        header {
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #4cc9f0, #4361ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            color: #a9d6e5;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 20px auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: #000;
+            max-width: 800px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4361ee, #3a0ca3);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #f72585, #b5179e);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4cc9f0, #4895ef);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .stats {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin: 15px auto;
+            display: inline-block;
+            font-size: 1.1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            display: inline-block;
+            margin: 0 15px;
+        }
+
+        .stat-label {
+            color: #a9d6e5;
+            margin-right: 8px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #4cc9f0;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 250px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Визуализатор множества Мандельброта</h1>
+            <p class="subtitle">Исследуйте бесконечную сложность фрактала Мандельброта. Нажмите и перетащите для увеличения, используйте кнопки для управления визуализацией.</p>
+        </header>
+
+        <div class="canvas-container">
+            <canvas id="mandelbrotCanvas" width="800" height="600"></canvas>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-label">Время генерации:</span>
+                <span id="generationTime" class="stat-value">0 мс</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Итерации:</span>
+                <span id="iterationsCount" class="stat-value">100</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Увеличение:</span>
+                <span id="zoomLevel" class="stat-value">1x</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn btn-primary">Пуск</button>
+            <button id="stopBtn" class="btn btn-secondary">Стоп</button>
+            <button id="resetBtn" class="btn btn-success">Новый рисунок</button>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('mandelbrotCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Control elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const generationTimeEl = document.getElementById('generationTime');
+        const iterationsCountEl = document.getElementById('iterationsCount');
+        const zoomLevelEl = document.getElementById('zoomLevel');
+        
+        // Parameters
+        const width = canvas.width;
+        const height = canvas.height;
+        let maxIterations = 100;
+        let isRendering = false;
+        let animationId = null;
+        
+        // View parameters
+        let centerX = -0.5;
+        let centerY = 0;
+        let scale = 2.5;
+        let zoomFactor = 1;
+        
+        // Color palette
+        function getColor(iter, maxIter) {
+            if (iter === maxIter) {
+                return [0, 0, 0]; // Black for points inside the set
+            }
+            
+            // Smooth coloring algorithm
+            const t = iter / maxIter;
+            const r = Math.floor(9 * (1 - t) * t * t * t * 255);
+            const g = Math.floor(15 * (1 - t) * (1 - t) * t * t * 255);
+            const b = Math.floor(8.5 * (1 - t) * (1 - t) * (1 - t) * t * 255);
+            
+            return [r, g, b];
+        }
+        
+        // Mandelbrot calculation
+        function mandelbrot(cx, cy, maxIter) {
+            let x = 0;
+            let y = 0;
+            let iteration = 0;
+            
+            while (x*x + y*y <= 4 && iteration < maxIter) {
+                const xtemp = x*x - y*y + cx;
+                y = 2*x*y + cy;
+                x = xtemp;
+                iteration++;
+            }
+            
+            return iteration;
+        }
+        
+        // Render the Mandelbrot set
+        function renderMandelbrot() {
+            if (isRendering) return;
+            
+            const startTime = performance.now();
+            isRendering = true;
+            
+            // Create image data
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+            
+            // Calculate bounds
+            const xMin = centerX - scale;
+            const xMax = centerX + scale;
+            const yMin = centerY - scale * (height / width);
+            const yMax = centerY + scale * (height / width);
+            
+            // Render line by line to allow UI updates
+            let currentY = 0;
+            const renderLine = () => {
+                if (!isRendering) {
+                    return;
+                }
+                
+                for (let i = 0; i < 10 && currentY < height; i++) { // Process 10 rows at a time
+                    for (let x = 0; x < width; x++) {
+                        const cx = xMin + (x / width) * (xMax - xMin);
+                        const cy = yMin + (currentY / height) * (yMax - yMin);
+                        
+                        const iter = mandelbrot(cx, cy, maxIterations);
+                        const idx = (currentY * width + x) * 4;
+                        
+                        const [r, g, b] = getColor(iter, maxIterations);
+                        
+                        data[idx] = r;     // Red
+                        data[idx + 1] = g; // Green
+                        data[idx + 2] = b; // Blue
+                        data[idx + 3] = 255; // Alpha
+                    }
+                    currentY++;
+                }
+                
+                // Update the canvas with current progress
+                ctx.putImageData(imageData, 0, 0);
+                
+                // Update stats
+                iterationsCountEl.textContent = maxIterations;
+                zoomLevelEl.textContent = zoomFactor.toFixed(2) + 'x';
+                
+                if (currentY < height) {
+                    setTimeout(renderLine, 0); // Yield to UI thread
+                } else {
+                    const endTime = performance.now();
+                    generationTimeEl.textContent = Math.round(endTime - startTime) + ' ms';
+                    isRendering = false;
+                    startBtn.disabled = false;
+                }
+            };
+            
+            startBtn.disabled = true;
+            renderLine();
+        }
+        
+        // Reset to initial view
+        function resetView() {
+            centerX = -0.5;
+            centerY = 0;
+            scale = 2.5;
+            zoomFactor = 1;
+            updateZoomDisplay();
+        }
+        
+        // Update zoom level display
+        function updateZoomDisplay() {
+            zoomLevelEl.textContent = zoomFactor.toFixed(2) + 'x';
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', () => {
+            if (!isRendering) {
+                renderMandelbrot();
+            }
+        });
+        
+        stopBtn.addEventListener('click', () => {
+            isRendering = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            startBtn.disabled = false;
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            stopBtn.click(); // Stop any ongoing rendering
+            resetView();
+            renderMandelbrot();
+        });
+        
+        // Initialize
+        resetView();
+        renderMandelbrot();
+    </script>
+</body>
+</html>
