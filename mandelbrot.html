@@ -212,11 +212,11 @@
     </div>
 
     <script>
-        // Canvas setup
+        // Настройка холста
         const canvas = document.getElementById('mandelbrotCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Control elements
+        // Элементы управления
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const resetBtn = document.getElementById('resetBtn');
@@ -224,26 +224,26 @@
         const iterationsCountEl = document.getElementById('iterationsCount');
         const zoomLevelEl = document.getElementById('zoomLevel');
         
-        // Parameters
+        // Параметры
         const width = canvas.width;
         const height = canvas.height;
         let maxIterations = 100;
         let isRendering = false;
         let animationId = null;
         
-        // View parameters
+        // Параметры отображения
         let centerX = -0.5;
         let centerY = 0;
         let scale = 2.5;
         let zoomFactor = 1;
         
-        // Color palette
+        // Цветовая палитра
         function getColor(iter, maxIter) {
             if (iter === maxIter) {
-                return [0, 0, 0]; // Black for points inside the set
+                return [0, 0, 0]; // Черный для точек внутри множества
             }
             
-            // Smooth coloring algorithm
+            // Алгоритм сглаживания цвета
             const t = iter / maxIter;
             const r = Math.floor(9 * (1 - t) * t * t * t * 255);
             const g = Math.floor(15 * (1 - t) * (1 - t) * t * t * 255);
@@ -252,7 +252,7 @@
             return [r, g, b];
         }
         
-        // Mandelbrot calculation
+        // Расчет множества Мандельброта
         function mandelbrot(cx, cy, maxIter) {
             let x = 0;
             let y = 0;
@@ -268,31 +268,31 @@
             return iteration;
         }
         
-        // Render the Mandelbrot set
+        // Отрисовка множества Мандельброта
         function renderMandelbrot() {
             if (isRendering) return;
             
             const startTime = performance.now();
             isRendering = true;
             
-            // Create image data
+            // Создание данных изображения
             const imageData = ctx.createImageData(width, height);
             const data = imageData.data;
             
-            // Calculate bounds
+            // Вычисление границ
             const xMin = centerX - scale;
             const xMax = centerX + scale;
             const yMin = centerY - scale * (height / width);
             const yMax = centerY + scale * (height / width);
             
-            // Render line by line to allow UI updates
+            // Отрисовка построчно для обновления интерфейса
             let currentY = 0;
             const renderLine = () => {
                 if (!isRendering) {
                     return;
                 }
                 
-                for (let i = 0; i < 10 && currentY < height; i++) { // Process 10 rows at a time
+                for (let i = 0; i < 10 && currentY < height; i++) { // Обработка 10 строк за раз
                     for (let x = 0; x < width; x++) {
                         const cx = xMin + (x / width) * (xMax - xMin);
                         const cy = yMin + (currentY / height) * (yMax - yMin);
@@ -302,26 +302,26 @@
                         
                         const [r, g, b] = getColor(iter, maxIterations);
                         
-                        data[idx] = r;     // Red
-                        data[idx + 1] = g; // Green
-                        data[idx + 2] = b; // Blue
-                        data[idx + 3] = 255; // Alpha
+                        data[idx] = r;     // Красный
+                        data[idx + 1] = g; // Зеленый
+                        data[idx + 2] = b; // Синий
+                        data[idx + 3] = 255; // Альфа
                     }
                     currentY++;
                 }
                 
-                // Update the canvas with current progress
+                // Обновление холста с текущим прогрессом
                 ctx.putImageData(imageData, 0, 0);
                 
-                // Update stats
+                // Обновление статистики
                 iterationsCountEl.textContent = maxIterations;
                 zoomLevelEl.textContent = zoomFactor.toFixed(2) + 'x';
                 
                 if (currentY < height) {
-                    setTimeout(renderLine, 0); // Yield to UI thread
+                    setTimeout(renderLine, 0); // Передача управления потоку UI
                 } else {
                     const endTime = performance.now();
-                    generationTimeEl.textContent = Math.round(endTime - startTime) + ' ms';
+                    generationTimeEl.textContent = Math.round(endTime - startTime) + ' мс';
                     isRendering = false;
                     startBtn.disabled = false;
                 }
@@ -331,7 +331,7 @@
             renderLine();
         }
         
-        // Reset to initial view
+        // Возврат к начальному виду
         function resetView() {
             centerX = -0.5;
             centerY = 0;
@@ -340,12 +340,12 @@
             updateZoomDisplay();
         }
         
-        // Update zoom level display
+        // Обновление отображения уровня увеличения
         function updateZoomDisplay() {
             zoomLevelEl.textContent = zoomFactor.toFixed(2) + 'x';
         }
         
-        // Event listeners
+        // Обработчики событий
         startBtn.addEventListener('click', () => {
             if (!isRendering) {
                 renderMandelbrot();
@@ -362,12 +362,12 @@
         });
         
         resetBtn.addEventListener('click', () => {
-            stopBtn.click(); // Stop any ongoing rendering
+            stopBtn.click(); // Остановка текущей отрисовки
             resetView();
             renderMandelbrot();
         });
         
-        // Initialize
+        // Инициализация
         resetView();
         renderMandelbrot();
     </script>
