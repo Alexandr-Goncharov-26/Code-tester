@@ -6,6 +6,8 @@ from app.utils import export_to_excel, import_from_excel
 from app import db, login_manager
 from datetime import datetime
 import os
+import uuid
+from werkzeug.utils import secure_filename
 
 main_bp = Blueprint('main', __name__)
 admin_bp = Blueprint('admin', __name__)
@@ -120,8 +122,13 @@ def import_contacts():
         return redirect(url_for('admin.dashboard'))
     
     if file and file.filename.endswith('.xlsx'):
+        # Создаем безопасное имя файла
+        filename = secure_filename(file.filename)
+        name, ext = os.path.splitext(filename)
+        safe_filename = f"{name}_{uuid.uuid4().hex}{ext}"
+        temp_path = os.path.join('static/uploads', safe_filename)
+        
         # Сохраняем временный файл
-        temp_path = os.path.join('static/uploads', file.filename)
         file.save(temp_path)
         
         try:

@@ -10,6 +10,11 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
+    # Создаем папку для загрузки файлов если её нет
+    import os
+    upload_path = app.config.get('UPLOAD_FOLDER', 'static/uploads')
+    os.makedirs(upload_path, exist_ok=True)
+    
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'admin.login'
